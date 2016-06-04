@@ -1,0 +1,45 @@
+---
+- name: install required postfix packages
+  apt: name={{item}} state=installed
+  with_items:
+    - postfix
+    - postfix-mysql
+
+- name: purge Exim from host
+  apt: name={{item}} state=absent purge=yes
+  with_items:
+  - exim4
+  - exim4-base
+  - exim4-config
+  - exim4-daemon-light
+
+- name: Postfix virtual mailbox domain 
+  template: src=mysql-virtual-mailbox-domains.cf dest=/etc/postfix/mysql-virtual-mailbox-domains.cf
+  notify: restart postfix
+
+- name: Postfix to use the virtual mailbox domain mapping using command postc
+  command: postconf virtual_mailbox_domains=mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf
+
+- name: Postfix virtual mailbox mapping
+  template: src=mysql-virtual-mailbox-maps.cf.j2 dest=/etc/postfix/mysql-virtual-mailbox-maps.cf
+  notify: restart postfix
+
+- name: Postfix to use the virtual mailbox mapping using command postconf
+  command: postconf virtual_mailbox_maps=mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
+
+
+- name: Restricting access to database mapping files that contain a password
+  file: path=/etc/postfix/mysql-{{item}}.cf mode=0640
+  with_items:
+  - virtual-mailbox-domains
+  - virtual-mailbox-maps
+  
+- name: Make Postfix use LMTP to send emails to Dovecot
+  command: postconf virtual_transport=lmtp:inet:dovecotlb.atms.com
+
+- name: Make Postfix for myhostname 
+  command: postconf myhostname={{myhostname_value}}
+
+- name: emails size up to 20 MB large
+  command: postconf message_size_limit=21943040
+

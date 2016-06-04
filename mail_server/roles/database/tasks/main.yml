@@ -1,4 +1,13 @@
 ---
+- name: installing mysql server on host
+  apt: pkg=mysql-server state=installed  
+
+- name: make sure mysql-server is started
+  service: name=mysql enabled=yes state=started
+
+- name: Installing required Python mysqldb module for Ansible to manage databases
+  apt: pkg=python-mysqldb state=installed
+
 - name: creating mailserver mysql database
   mysql_db: name=mailserver state=present
 
