@@ -1,0 +1,38 @@
+---
+- name: install required package
+  apt: name={{item}} state=installed
+  with_items:
+    - dovecot-mysql
+    - dovecot-pop3d
+    - dovecot-imapd
+    - dovecot-lmtpd
+- name: Create the vmail group
+  group: name=vmail gid=5000
+- name: Create the vmail user
+  user: name=vmail uid=5000 group=vmail home=/var/vmail
+- name: Create mailbox directory
+  file: path=/var/vmail state=directory owner=vmail group=vmail
+- name: Enabling SQL-based authentication
+  lineinfile: dest=/etc/dovecot/conf.d/10-auth.conf regexp='^\#!include auth-sql.conf.ext' line='!include auth-sql.conf.ext' 
+  notify: restart dovecot
+- name: Copying SQL authentication configuration (auth-sql.conf.ext)
+  copy: src=auth-sql.conf.ext dest=/etc/dovecot/conf.d/auth-sql.conf.ext
+  notify: restart dovecot
+- name: Copying 10-mail.conf
+  copy: src=10-mail.conf dest=/etc/dovecot/conf.d/10-mail.conf
+  notify: restart dovecot
+- name: Copying 10-master.conf
+  copy: src=10-master.conf dest=/etc/dovecot/conf.d/10-master.conf
+  notify: restart dovecot
+- name: Copying LMTP configuration (20-lmtp.conf - enable sieve plugin)
+  copy: src=20-lmtp.conf dest=/etc/dovecot/conf.d/20-lmtp.conf
+  notify: restart dovecot
+- name: Copying SQL  configuration 
+  template: src=dovecot-sql.conf.ext dest=/etc/dovecot/dovecot-sql.conf.ext
+  notify: restart dovecot
+- name: Fixing ownership and mode of dovecot.conf
+  file: path=/etc/dovecot/dovecot.conf group=vmail mode=0644
+  notify: restart dovecot
+- name: Fixing ownership and mode of dovecot-sql.conf.ext
+  file: path=/etc/dovecot/dovecot-sql.conf.ext owner=root group=root mode=0640
+  notify: restart dovecot
