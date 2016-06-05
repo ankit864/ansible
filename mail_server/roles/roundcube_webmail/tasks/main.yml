@@ -1,0 +1,36 @@
+---
+- name: installing APACHE  PHP for roundcube webmail
+  apt: name={{item}} state=installed
+  with_items:
+    - apache2
+    - php5 
+    - php5-mysql
+- name: Install MySQL
+    apt: name={{ item }} state=present
+    with_items:
+    - python-mysqldb
+    - mysql-server
+  - name: Start the MySQL service
+    service: name=mysql  state=started enabled=true
+  - name: update mysql root password for all root accounts
+    mysql_user: 
+      name: root 
+      password: "root"
+      login_user: root
+      login_password: "root"
+      check_implicit_admin: yes
+      priv: "*.*:ALL,GRANT"
+- name: adding Jessie backports repository (for Roundcube)
+  apt_repository: repo='deb http://http.debian.net/debian jessie-backports main' state=present
+- name: install required binary packages
+  apt: name={{item}} state=installed
+  with_items:
+  - roundcube 
+  - roundcube-plugins
+- name: Creating random des_key for Roundcube
+  shell: pwgen 24
+  register: roundcube_random_des_key
+- name: Deploying Roundcube configuration
+  template: src=roundcube_config.inc.php dest=/etc/roundcube/config.inc.php owner=root group=www-data mode=640
+- name: apche roundcube configuration
+  template: src=apache_roundcube.conf dest=/etc/apache2/conf-available/roundcube.conf
