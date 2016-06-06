@@ -31,6 +31,6 @@
   shell: pwgen 24
   register: roundcube_random_des_key
 - name: Deploying Roundcube configuration
-  template: src=roundcube_config.inc.php dest=/etc/roundcube/config.inc.php owner=root group=www-data mode=640
+  template: src=roundcube_config.inc.php.j2 dest=/etc/roundcube/config.inc.php owner=root group=www-data mode=640
 - name: apche roundcube configuration
   template: src=apache_roundcube.conf dest=/etc/apache2/conf-available/roundcube.conf
